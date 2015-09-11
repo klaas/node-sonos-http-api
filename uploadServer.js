@@ -210,7 +210,7 @@ app.get('/sounds', function (req, res) {
 })
 
 app.delete('/sounds/*', function (req, res) {
-    var params = req.url.substring(1).split('/');
+    var params = decodeURIComponent(req.url.substring(1)).split('/');
     
     if( params.length >= 2 ) {
 		// 	console.log(req);
@@ -224,44 +224,15 @@ app.delete('/sounds/*', function (req, res) {
 		fs.unlink(fullPath, function (err) {
 			if (err) {
 				console.error('error deleting ' + fullPath);
-				res.status(200).end();
+				res.status(400).end();
 			} else {
 				console.log('successfully deleted ' + fullPath);
 				res.status(200).end();
 			}
 			});
-			
     } else {
 		res.status(400).end();
     }
-	
-/*
-	var subdirPathLength = subdirPath.length + 1;
-	var paths = _pbGetAllFilesFromFolder(subdirPath);
-	var filenamesArray = paths.map(function(path) {
-// 		console.log("path" + path);
-	  return path.substring(subdirPathLength);
-	});
-	console.log(filenamesArray);
-	var json = filenamesArray.map(function(filename){
-		var name = filename.pbStringByRemovingPathExtension();
-		if( name.lastIndexOf('-') != -1 ) {
-			var duration = parseInt(name.substring(name.lastIndexOf('-') + 1));
-			return {
-				filename: filename,
-				name: name.pbStringByRemovingSubstringWithSeparator('-'),
-				duration: duration
-				};
-		} else {
-			return {
-				filename: filename,
-				name: name,
-				duration: null };
-		}
-	});
-*/
-	
-	res.json({xx:""});
 })
 
 
