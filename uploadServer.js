@@ -58,7 +58,6 @@ server.listen(settings.port, function () {
   console.log('http server listening on port', settings.port);
 });
 
-
 // =======================================================================================
 // =======================================================================================
 // FileUploadServer!
@@ -235,6 +234,9 @@ app.delete('/sounds/*', function (req, res) {
     }
 })
 
+app.get('/sonosFavorites', function (req, res) {
+	res.sendFile(__dirname + '/static/misc/sonosFavorites.json');
+})
 
 app.listen(5006);
 
