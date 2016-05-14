@@ -5,6 +5,8 @@ Feel free to use it as you please. Consider donating if you want to support furt
 SONOS HTTP API
 ==============
 
+**This application requires node 4.0.0 or higher!**
+
 A simple http based API for controlling your Sonos system. I try to follow compatibility versioning between this and sonos-discovery, which means that 0.3.x requires 0.3.x of sonos-discovery.
 
 There is a simple sandbox at /docs (incomplete atm)
@@ -123,18 +125,18 @@ Queue
 -----
 Obtain the current queue list from a specified player. The request will accept:
  - No parameters
- 
+
 	`http://localhost:5005/living room/queue`
  - Just a start index for the queue
- 
+
 	`http://localhost:5005/living room/queue/[start-index]`
  - A start index and a count of items to return
- 
+
 	`http://localhost:5005/living room/queue/[start-index]/[count]`
 
 
 
-Example queue response: 
+Example queue response:
 ```
 {
   "startIndex": "0",
@@ -184,26 +186,93 @@ The first player listed in the example, "room1", will become the coordinator. It
 Favorite will have precedence over a uri. Playmode requires 0.4.2 of sonos-discovery to work.
 pauseOthers will pause all zones before applying the preset, effectively muting your system.  sleep is an optional value that enables the sleep timer and supports the 'HH:MM:SS' format.
 
-preset.json
+presets.json
 -----------
 
-You can create a file with pre made presets, called presets.json. I've included a sample file based on my own setup. In the example, there is one preset called `all`, which you can apply by invoking:
+You can create a file with pre made presets, called presets.json. Example content:
+
+```json
+{
+  "all": {
+    "playMode": "SHUFFLE",
+    "players": [
+      {
+        "roomName": "Bathroom",
+        "volume": 10
+      },
+      {
+        "roomName": "Kitchen",
+        "volume": 10
+      },
+      {
+        "roomName": "Office",
+        "volume": 10
+      },
+      {
+        "roomName": "Bedroom",
+        "volume": 10
+      },
+      {
+        "roomName": "TV Room",
+        "volume": 15
+      }
+    ],
+    "pauseOthers": true
+  },
+  "tv": {
+    "players": [
+      {
+        "roomName": "TV Room",
+        "volume": 20
+      }
+    ],
+    "pauseOthers": true,
+    "uri": "x-rincon-stream:RINCON_000XXXXXXXXXX01400"
+  }
+}
+```
+
+
+In the example, there is one preset called `all`, which you can apply by invoking:
 
 `http://localhost:5005/preset/all`
 
 settings.json
 -------------
 
-If you want to change port or the cache dir for tts files, you can create a settings.json file and put in the root folder.
+If you want to change default settings, you can create a settings.json file and put in the root folder.
 
-The defaults are:
+Available options are:
 
+* port: change the listening port
+* cacheDir: dir for tts files
+* https: use https which requires a key and certificate or pfx file
+* auth: require basic auth credentials which requires a username and password
+
+Example:
+```json
 	{
-	  port: 5005,
-	  cacheDir: './cache'
+	  "voicerss": "Your api key for TTS with voicerss",
+	  "port": 5005,
+	  "securePort": 5006,
+	  "cacheDir": "./cache",
+	  "https": {
+	    "key": "/path/to/key.pem",
+	    "cert" : "/path/to/cert.pem"
+
+	    //... for pfx (alternative configuration)
+	    "pfx": "/path/to/pfx.pfx"
+	  },
+	  "auth": {
+	    "username": "admin",
+	    "password": "password"
+	  }
 	}
+```
 
 Override as it suits you.
+
+
 
 Favorites
 ---------
@@ -227,7 +296,19 @@ and it will replace the queue with the playlist and starts playing.
 Say (TTS support)
 -----------------
 
-Experimental support for TTS. Action is:
+Experimental support for TTS. This REQUIRES a registered API key from voiceRSS! See http://www.voicerss.org/ for info.
+
+You need to add this to a file called settings.json (create if it doesn't exist), like this:
+
+```
+{
+  "voicerss": "f5e77e1d42063175b9219866129189a3"
+}
+```
+
+Replace the code above (it is just made up) with the api-key you've got after registering.
+
+Action is:
 
 	/[Room name]/say/[phrase][/[language_code]]
 	/sayall/[phrase][/[language_code]]
@@ -235,10 +316,60 @@ Experimental support for TTS. Action is:
 Example:
 
 	/Office/say/Hello, dinner is ready
-	/Office/say/Hej, maten är klar/sv
+	/Office/say/Hej, maten är klar/sv-se
 	/sayall/Hello, dinner is ready
 
-Sayall will group all players, set 20% volume and then try and restore everything as the way it where. Please try it out, it will probably contain glitches but please report detailed descriptions on what the problem is (starting state, error that occurs, and the final state of your system).
+Sayall will group all players, set 40% volume and then try and restore everything as the way it where. Please try it out, it will probably contain glitches but please report detailed descriptions on what the problem is (starting state, error that occurs, and the final state of your system).
+
+The supported language codes are:
+
+|ca-es|Catalan|
+|zh-cn|Chinese (China)|
+|zh-hk|Chinese (Hong Kong)|
+|zh-tw|Chinese (Taiwan)|
+|da-dk|Danish|
+|nl-nl|Dutch|
+|en-au|English (Australia)|
+|en-ca|English (Canada)|
+|en-gb|English (Great Britain)|
+|en-in|English (India)|
+|en-us|English (United States)|
+|fi-fi|Finnish|
+|fr-ca|French (Canada)|
+|fr-fr|French (France)|
+|de-de|German|
+|it-it|Italian|
+|ja-jp|Japanese|
+|ko-kr|Korean|
+|nb-no|Norwegian|
+|pl-pl|Polish|
+|pt-br|Portuguese (Brazil)|
+|pt-pt|Portuguese (Portugal)|
+|ru-ru|Russian|
+|es-mx|Spanish (Mexico)|
+|es-es|Spanish (Spain)|
+|sv-se|Swedish (Sweden)|
+
+Spotify and Apple Music (Experimental)
+----------------------
+
+The following endpoints are available:
+
+```
+# Spotify
+/RoomName/spotify/now/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
+/RoomName/spotify/next/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
+/RoomName/spotify/queue/spotify:track:4LI1ykYGFCcXPWkrpcU7hn
+
+# Apple Music
+/RoomName/applemusic/{now,next,queue}/song:{songID}
+/RoomName/applemusic/{now,next,queue}/album:{albumID}
+```
+
+You can find Apple Music song and album IDs via the [iTunes Search
+API](https://affiliate.itunes.apple.com/resources/documentation/itunes-store-web-service-search-api/).
+
+It only handles a single spotify account currently. It will probably use the first account added on your system. Experiment with it and leave feedback!
 
 Docker
 -------
@@ -261,7 +392,7 @@ Since 0.17.x there is now support for a web hook. If you add a setting in settin
 
 ```
 {
-  "webhook": "http://localhost:5006/"
+  "webhook": "http://localhost:5007/"
 }
 ```
 
